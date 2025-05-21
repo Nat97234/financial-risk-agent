@@ -4,5 +4,6 @@ langchain
 langchain-community
 pandas
 requests
+plotly
 python-dotenv
 
