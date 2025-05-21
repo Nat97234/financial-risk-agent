@@ -7,4 +7,5 @@ requests
 plotly
 tiktoken
 python-dotenv
+faiss-cpu
 
