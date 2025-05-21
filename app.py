@@ -130,6 +130,8 @@ def load_data():
         "worldbank_inflation": worldbank.to_dict(orient="records"),
         "eurostat_inflation": eurostat.to_dict(orient="records")
     }
+url = "https://huggingface.co/datasets/Naat97/financial-risk-data/tree/main"
+df = pd.read_csv(url)
 
 # تحويل البيانات إلى مستندات
 def convert_data_to_documents(combined_data):
