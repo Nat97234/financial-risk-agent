@@ -3,7 +3,8 @@ python-dotenv
 pandas
 requests
 langchain
-openai
+langchain-community
+langchain-openai
 faiss-cpu
 streamlit
 numpy
@@ -11,13 +12,5 @@ matplotlib
 plotly
 seaborn
 scikit-learn
-urllib3
-certifi
-charset-normalizer
-idna
-six 
-setuptools
-wheel
-pip
 python-dateutil
 pytz
