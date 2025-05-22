@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Financial Data Analysis</title>
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <style>
+      :root {
+        --primary-color: #1a237e;
+        --secondary-color: #ffc107;
+        --light-color: #f8f9fa;
+        --dark-color: #212529;
+      }
+
+      body {
+        font-family: "Roboto", "Noto Sans Arabic", sans-serif;
+        background-color: #f5f5f5;
+        transition: all 0.3s ease;
+      }
+
+      body.rtl {
+        direction: rtl;
+        text-align: right;
+      }
+
+      .navbar {
+        background-color: var(--primary-color);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .navbar-brand {
+        font-weight: 700;
+        color: white !important;
+      }
+
+      .hero-section {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color) 0%,
+          #283593 100%
+        );
+        color: white;
+        padding: 4rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 20px 20px;
+      }
+
+      .card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+        margin-bottom: 20px;
+      }
+
+      .card:hover {
+        transform: translateY(-5px);
+      }
+
+      .card-header {
+        background-color: var(--primary-color);
+        color: white;
+        font-weight: 500;
+        border-radius: 10px 10px 0 0 !important;
+      }
+
+      .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+      }
+
+      .btn-primary:hover {
+        background-color: #0d1b6b;
+        border-color: #0d1b6b;
+      }
+
+      .btn-outline-primary {
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+      }
+
+      .btn-outline-primary:hover {
+        background-color: var(--primary-color);
+        color: white;
+      }
+
+      .language-switcher {
+        cursor: pointer;
+        padding: 5px 10px;
+        border-radius: 5px;
+        background-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .language-switcher:hover {
+        background-color: rgba(255, 255, 255, 0.3);
+      }
+
+      .search-box {
+        position: relative;
+      }
+
+      .search-suggestions {
+        position: absolute;
+        width: 100%;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 0 0 5px 5px;
+        display: none;
+      }
+
+      .search-suggestion {
+        padding: 8px 15px;
+        cursor: pointer;
+      }
+
+      .search-suggestion:hover {
+        background-color: #f5f5f5;
+      }
+
+      .loading-spinner {
+        display: none;
+        text-align: center;
+        padding: 20px;
+      }
+
+      .spinner-border {
+        width: 3rem;
+        height: 3rem;
+      }
+
+      .answer-card {
+        min-height: 200px;
+      }
+
+      .chart-container {
+        position: relative;
+        height: 300px;
+        margin-bottom: 20px;
+      }
+
+      .query-history {
+        max-height: 300px;
+        overflow-y: auto;
+      }
+
+      .history-item {
+        cursor: pointer;
+        padding: 8px 15px;
+        border-bottom: 1px solid #eee;
+      }
+
+      .history-item:hover {
+        background-color: #f5f5f5;
+      }
+
+      .feedback-buttons {
+        display: none;
+        margin-top: 15px;
+      }
+
+      .feedback-btn {
+        margin-right: 10px;
+        cursor: pointer;
+      }
+
+      footer {
+        background-color: var(--dark-color);
+        color: white;
+        padding: 2rem 0;
+        margin-top: 3rem;
+      }
+
+      /* Animation classes */
+      .fade-in {
+        animation: fadeIn 0.5s ease-in;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* RTL specific styles */
+      body.rtl .text-end {
+        text-align: left !important;
+      }
+
+      body.rtl .me-2 {
+        margin-right: 0 !important;
+        margin-left: 0.5rem !important;
+      }
+
+      body.rtl .ms-2 {
+        margin-left: 0 !important;
+        margin-right: 0.5rem !important;
+      }
+
+      body.rtl .float-end {
+        float: left !important;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+      <div class="container">
+        <a class="navbar-brand" href="#">
+          <i class="fas fa-chart-line me-2"></i>
+          <span class="en">Financial Data Analysis</span>
+          <span class="ar d-none">تحليل البيانات المالية</span>
+        </a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link active en" href="#">Home</a>
+              <a class="nav-link active ar d-none" href="#">الرئيسية</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link en" href="#about">About</a>
+              <a class="nav-link ar d-none" href="#about">حول</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link en" href="#faq">FAQ</a>
+              <a class="nav-link ar d-none" href="#faq">الأسئلة</a>
+            </li>
+            <li class="nav-item">
+              <span
+                class="language-switcher nav-link"
+                onclick="toggleLanguage()"
+              >
+                <span class="en">العربية</span>
+                <span class="ar d-none">English</span>
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <div class="container text-center">
+        <h1 class="en">Ask Anything About Financial Data</h1>
+        <h1 class="ar d-none">اسأل عن أي شيء متعلق بالبيانات المالية</h1>
+        <p class="lead mt-3 en">
+          Get instant answers about stocks, exchange rates, inflation and
+          more.<br />
+          Powered by Alpha Vantage, World Bank, and other financial data
+          sources.
+        </p>
+        <p class="lead mt-3 ar d-none">
+          احصل على إجابات فورية عن الأسهم، أسعار الصرف، التضخم والمزيد.<br />
+          مدعوم من Alpha Vantage، البنك الدولي، ومصادر البيانات المالية الأخرى.
+        </p>
+      </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="container">
+      <div class="row">
+        <!-- Left Column - Query Input and History -->
+        <div class="col-lg-4">
+          <div class="card mb-4">
+            <div class="card-header">
+              <i class="fas fa-search me-2"></i>
+              <span class="en">Ask a Question</span>
+              <span class="ar d-none">اطرح سؤالاً</span>
+            </div>
+            <div class="card-body">
+              <form id="queryForm" method="post">
+                <div class="search-box mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="questionInput"
+                    placeholder="Ask about stocks, exchange rates, or inflation..."
+                    data-ar-placeholder="اسأل عن الأسهم، أسعار الصرف، أو التضخم..."
+                  />
+                  <div class="search-suggestions" id="searchSuggestions"></div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">
+                  <span class="en">Submit</span>
+                  <span class="ar d-none">إرسال</span>
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <i class="fas fa-history me-2"></i>
+              <span class="en">Query History</span>
+              <span class="ar d-none">سجل الأسئلة</span>
+            </div>
+            <div class="card-body">
+              <div class="query-history" id="queryHistory">
+                <div class="text-muted en">
+                  Your recent queries will appear here
+                </div>
+                <div class="text-muted ar d-none">ستظهر أسئلتك الحديثة هنا</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column - Results and Visualizations -->
+        <div class="col-lg-8">
+          <div class="card answer-card mb-4">
+            <div class="card-header">
+              <i class="fas fa-reply me-2"></i>
+              <span class="en">Answer</span>
+              <span class="ar d-none">الإجابة</span>
+            </div>
+            <div class="card-body">
+              <div class="loading-spinner" id="loadingSpinner">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 en">Analyzing your question...</p>
+                <p class="mt-2 ar d-none">جارٍ تحليل سؤالك...</p>
+              </div>
+              <div id="answerContent">
+                <div class="text-muted en">Ask a question to get started</div>
+                <div class="text-muted ar d-none">اطرح سؤالاً للبدء</div>
+              </div>
+              <div class="feedback-buttons" id="feedbackButtons">
+                <small class="text-muted en">Was this answer helpful?</small>
+                <small class="text-muted ar d-none"
+                  >هل كانت الإجابة مفيدة؟</small
+                >
+                <div class="mt-2">
+                  <span
+                    class="feedback-btn text-success"
+                    onclick="sendFeedback('positive')"
+                  >
+                    <i class="fas fa-thumbs-up"></i>
+                    <span class="en">Yes</span>
+                    <span class="ar d-none">نعم</span>
+                  </span>
+                  <span
+                    class="feedback-btn text-danger"
+                    onclick="sendFeedback('negative')"
+                  >
+                    <i class="fas fa-thumbs-down"></i>
+                    <span class="en">No</span>
+                    <span class="ar d-none">لا</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mb-4" id="visualizationCard" style="display: none">
+            <div class="card-header">
+              <i class="fas fa-chart-bar me-2"></i>
+              <span class="en">Data Visualization</span>
+              <span class="ar d-none">تصور البيانات</span>
+            </div>
+            <div class="card-body">
+              <div class="chart-container">
+                <canvas id="dataChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- About Section -->
+      <section id="about" class="my-5 py-4">
+        <div class="card">
+          <div class="card-header">
+            <i class="fas fa-info-circle me-2"></i>
+            <span class="en">About</span>
+            <span class="ar d-none">حول</span>
+          </div>
+          <div class="card-body">
+            <h4 class="en">Financial Data Analysis Tool</h4>
+            <h4 class="ar d-none">أداة تحليل البيانات المالية</h4>
+            <p class="en">
+              This tool allows you to ask questions in natural language about
+              various financial topics including stock performance, company
+              profiles, exchange rates, and inflation data. The system uses
+              advanced AI to understand your questions and retrieve accurate
+              answers from multiple financial data sources.
+            </p>
+            <p class="ar d-none">
+              تتيح لك هذه الأداة طرح أسئلة بلغة طبيعية حول مواضيع مالية مختلفة
+              تشمل أداء الأسهم، ملفات الشركات، أسعار الصرف، وبيانات التضخم.
+              يستخدم النظام ذكاءً اصطناعيًا متقدمًا لفهم أسئلتك واسترجاع إجابات
+              دقيقة من مصادر بيانات مالية متعددة.
+            </p>
+            <h5 class="mt-3 en">Data Sources</h5>
+            <h5 class="mt-3 ar d-none">مصادر البيانات</h5>
+            <ul class="en">
+              <li>Alpha Vantage - Stock market data</li>
+              <li>Financial Modeling Prep - Company profiles</li>
+              <li>Open Exchange Rates - Currency exchange rates</li>
+              <li>World Bank - Inflation and economic indicators</li>
+              <li>Eurostat - European economic data</li>
+            </ul>
+            <ul class="ar d-none">
+              <li>Alpha Vantage - بيانات سوق الأوراق المالية</li>
+              <li>Financial Modeling Prep - ملفات الشركات</li>
+              <li>Open Exchange Rates - أسعار صرف العملات</li>
+              <li>World Bank - التضخم والمؤشرات الاقتصادية</li>
+              <li>Eurostat - البيانات الاقتصادية الأوروبية</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ Section -->
+      <section id="faq" class="my-5 py-4">
+        <div class="card">
+          <div class="card-header">
+            <i class="fas fa-question-circle me-2"></i>
+            <span class="en">Frequently Asked Questions</span>
+            <span class="ar d-none">أسئلة متكررة</span>
+          </div>
+          <div class="card-body">
+            <div class="accordion" id="faqAccordion">
+              <!-- FAQ Item 1 -->
+              <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button
+                    class="accordion-button collapsed en"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#faq1"
+                  >
+                    What types of financial questions can I ask?
+                  </button>
+                  <button
+                    class="accordion-button collapsed ar d-none"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#faq1"
+                  >
+                    ما أنواع الأسئلة المالية التي يمكنني طرحها؟
+                  </button>
+                </h2>
+                <div
+                  id="faq1"
+                  class="accordion-collapse collapse"
+                  data-bs-parent="#faqAccordion"
+                >
+                  <div class="accordion-body">
+                    <p class="en">
+                      You can ask about stock prices, company information,
+                      exchange rates between currencies, inflation rates for
+                      different countries, and general financial analysis
+                      questions. Examples: "What is Apple's stock price today?",
+                      "Show me EUR to USD exchange rate", "What was the
+                      inflation rate in Germany last year?"
+                    </p>
+                    <p class="ar d-none">
+                      يمكنك السؤال عن أسعار الأسهم، معلومات الشركات، أسعار الصرف
+                      بين العملات، معدلات التضخم للدول المختلفة، وأسئلة التحليل
+                      المالي العامة. أمثلة: "ما هو سعر سهم آبل اليوم؟"، "أرني
+                      سعر صرف اليورو مقابل الدولار"، "ما كان معدل التضخم في
+                      ألمانيا العام الماضي؟"
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <!-- FAQ Item 2 -->
+              <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button
+                    class="accordion-button collapsed en"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#faq2"
+                  >
+                    How accurate are the answers?
+                  </button>
+                  <button
+                    class="accordion-button collapsed ar d-none"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#faq2"
+                  >
+                    ما مدى دقة الإجابات؟
+                  </button>
+                </h2>
+                <div
+                  id="faq2"
+                  class="accordion-collapse collapse"
+                  data-bs-parent="#faqAccordion"
+                >
+                  <div class="accordion-body">
+                    <p class="en">
+                      The answers are based on data from reliable financial
+                      sources. However, for investment decisions, you should
+                      always verify with additional sources and consult with a
+                      financial advisor.
+                    </p>
+                    <p class="ar d-none">
+                      تستند الإجابات إلى بيانات من مصادر مالية موثوقة. ومع ذلك،
+                      لقرارات الاستثمار، يجب عليك دائمًا التحقق من مصادر إضافية
+                      واستشارة مستشار مالي.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <!-- FAQ Item 3 -->
+              <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button
+                    class="accordion-button collapsed en"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#faq3"
+                  >
+                    Can I ask questions in Arabic?
+                  </button>
+                  <button
+                    class="accordion-button collapsed ar d-none"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#faq3"
+                  >
+                    هل يمكنني طرح الأسئلة بالعربية؟
+                  </button>
+                </h2>
+                <div
+                  id="faq3"
+                  class="accordion-collapse collapse"
+                  data-bs-parent="#faqAccordion"
+                >
+                  <div class="accordion-body">
+                    <p class="en">
+                      Yes! You can ask questions in either English or Arabic.
+                      The system will detect the language and respond in the
+                      same language.
+                    </p>
+                    <p class="ar d-none">
+                      نعم! يمكنك طرح الأسئلة إما باللغة الإنجليزية أو العربية.
+                      سيكتشف النظام اللغة وسيستجيب بنفس اللغة.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      <div class="container">
+        <div class="row">
+          <div class="col-md-6">
+            <h5 class="en">Financial Data Analysis</h5>
+            <h5 class="ar d-none">تحليل البيانات المالية</h5>
+            <p class="en">
+              Powered by Flask, OpenAI, and financial data APIs.<br />
+              Designed for financial enthusiasts and analysts.
+            </p>
+            <p class="ar d-none">
+              مدعوم من Flask، OpenAI، وواجهات برمجة تطبيقات البيانات المالية.<br />
+              مصمم لعشاق المال والمحللين.
+            </p>
+          </div>
+          <div class="col-md-3">
+            <h5 class="en">Links</h5>
+            <h5 class="ar d-none">روابط</h5>
+            <ul class="list-unstyled">
+              <li>
+                <a href="#" class="text-white en">Home</a
+                ><a href="#" class="text-white ar d-none">الرئيسية</a>
+              </li>
+              <li>
+                <a href="#about" class="text-white en">About</a
+                ><a href="#about" class="text-white ar d-none">حول</a>
+              </li>
+              <li>
+                <a href="#faq" class="text-white en">FAQ</a
+                ><a href="#faq" class="text-white ar d-none">الأسئلة</a>
+              </li>
+            </ul>
+          </div>
+          <div class="col-md-3">
+            <h5 class="en">Data Sources</h5>
+            <h5 class="ar d-none">مصادر البيانات</h5>
+            <ul class="list-unstyled">
+              <li>
+                <a
+                  href="https://www.alphavantage.co/"
+                  class="text-white"
+                  target="_blank"
+                  >Alpha Vantage</a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://financialmodelingprep.com/"
+                  class="text-white"
+                  target="_blank"
+                  >Financial Modeling Prep</a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://openexchangerates.org/"
+                  class="text-white"
+                  target="_blank"
+                  >Open Exchange Rates</a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://www.worldbank.org/"
+                  class="text-white"
+                  target="_blank"
+                  >World Bank</a
+                >
+              </li>
+            </ul>
+          </div>
+        </div>
+        <hr class="bg-light" />
+        <div class="text-center">
+          <small class="en"
+            >© 2023 Financial Data Analysis Tool. All rights reserved.</small
+          >
+          <small class="ar d-none"
+            >© 2023 أداة تحليل البيانات المالية. جميع الحقوق محفوظة.</small
+          >
+        </div>
+      </div>
+    </footer>
+
+    <!-- jQuery, Bootstrap JS, and Custom JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // Language toggle function
+      function toggleLanguage() {
+        const body = document.body;
+        const isRTL = body.classList.toggle("rtl");
+
+        // Toggle visibility of language elements
+        document.querySelectorAll(".en").forEach((el) => {
+          el.classList.toggle("d-none", isRTL);
+        });
+        document.querySelectorAll(".ar").forEach((el) => {
+          el.classList.toggle("d-none", !isRTL);
+        });
+
+        // Update input placeholder
+        const questionInput = document.getElementById("questionInput");
+        questionInput.placeholder = isRTL
+          ? questionInput.getAttribute("data-ar-placeholder")
+          : "Ask about stocks, exchange rates, or inflation...";
+
+        // Store language preference
+        localStorage.setItem("languagePreference", isRTL ? "ar" : "en");
+      }
+
+      // Check for saved language preference
+      if (localStorage.getItem("languagePreference") === "ar") {
+        toggleLanguage(); // Switch to Arabic if previously selected
+      }
+
+      // Sample question suggestions
+      const sampleQuestions = {
+        en: [
+          "What is Apple's stock price today?",
+          "Show me the EUR to USD exchange rate",
+          "What was the inflation rate in the US last year?",
+          "Compare Apple and Microsoft stock performance",
+          "What is the current interest rate in the Eurozone?",
+        ],
+        ar: [
+          "ما هو سعر سهم آبل اليوم؟",
+          "أرني سعر صرف اليورو مقابل الدولار",
+          "ما كان معدل التضخم في الولايات المتحدة العام الماضي؟",
+          "قارن أداء سهم آبل ومايكروسوفت",
+          "ما هو سعر الفائدة الحالي في منطقة اليورو؟",
+        ],
+      };
+
+      // Initialize Chart.js
+      let dataChart = null;
+
+      // Handle form submission
+      $("#queryForm").on("submit", function (e) {
+        e.preventDefault();
+        const question = $("#questionInput").val().trim();
+
+        if (!question) return;
+
+        // Show loading spinner
+        $("#loadingSpinner").show();
+        $("#answerContent").html("");
+        $("#feedbackButtons").hide();
+        $("#visualizationCard").hide();
+
+        // Add to query history
+        addToHistory(question);
+
+        // Send AJAX request to Flask backend
+        $.ajax({
+          type: "POST",
+          url: "/",
+          data: {
+            question: question,
+          },
+          success: function (response) {
+            // Hide loading spinner
+            $("#loadingSpinner").hide();
+
+            // Display answer
+            $("#answerContent").html(
+              `<div class="fade-in">${response.result}</div>`
+            );
+            $("#feedbackButtons").show();
+
+            // Try to extract and visualize numerical data
+            tryVisualizeData(response.result);
+          },
+          error: function () {
+            $("#loadingSpinner").hide();
+            const errorMsg = $("body").hasClass("rtl")
+              ? "حدث خطأ أثناء معالجة سؤالك. يرجى المحاولة مرة أخرى."
+              : "An error occurred while processing your question. Please try again.";
+            $("#answerContent").html(
+              `<div class="alert alert-danger fade-in">${errorMsg}</div>`
+            );
+          },
+        });
+      });
+
+      // Add question to history
+      function addToHistory(question) {
+        let history = JSON.parse(localStorage.getItem("queryHistory") || "[]");
+        history.unshift({
+          question: question,
+          timestamp: new Date().toISOString(),
+        });
+
+        // Keep only last 10 items
+        if (history.length > 10) {
+          history = history.slice(0, 10);
+        }
+
+        localStorage.setItem("queryHistory", JSON.stringify(history));
+        renderHistory(history);
+      }
+
+      // Render query history
+      function renderHistory(history) {
+        const historyContainer = $("#queryHistory");
+        historyContainer.empty();
+
+        if (history.length === 0) {
+          const emptyMsg = $("body").hasClass("rtl")
+            ? "ستظهر أسئلتك الحديثة هنا"
+            : "Your recent queries will appear here";
+          historyContainer.append(`<div class="text-muted">${emptyMsg}</div>`);
+          return;
+        }
+
+        history.forEach((item) => {
+          const historyItem = $(`
+                  <div class="history-item fade-in" onclick="reuseQuestion('${item.question.replace(
+                    /'/g,
+                    "\\'"
+                  )}')">
+                      <small class="text-muted">${new Date(
+                        item.timestamp
+                      ).toLocaleString()}</small><br>
+                      ${item.question}
+                  </div>
+              `);
+          historyContainer.append(historyItem);
+        });
+      }
+
+      // Reuse question from history
+      function reuseQuestion(question) {
+        $("#questionInput").val(question);
+        $("#queryForm").submit();
+      }
+
+      // Show question suggestions
+      $("#questionInput").on("input", function () {
+        const query = $(this).val().trim();
+        const suggestions = $("body").hasClass("rtl")
+          ? sampleQuestions.ar
+          : sampleQuestions.en;
+
+        if (!query) {
+          $("#searchSuggestions").hide();
+          return;
+        }
+
+        const filtered = suggestions.filter((q) =>
+          q.toLowerCase().includes(query.toLowerCase())
+        );
+
+        const suggestionsContainer = $("#searchSuggestions");
+        suggestionsContainer.empty();
+
+        if (filtered.length > 0) {
+          filtered.forEach((q) => {
+            suggestionsContainer.append(
+              `<div class="search-suggestion">${q}</div>`
+            );
+          });
+          suggestionsContainer.show();
+        } else {
+          suggestionsContainer.hide();
+        }
+      });
+
+      // Handle suggestion click
+      $(document).on("click", ".search-suggestion", function () {
+        $("#questionInput").val($(this).text());
+        $("#searchSuggestions").hide();
+        $("#queryForm").submit();
+      });
+
+      // Hide suggestions when clicking elsewhere
+      $(document).on("click", function (e) {
+        if (!$(e.target).closest(".search-box").length) {
+          $("#searchSuggestions").hide();
+        }
+      });
+
+      // Send feedback
+      function sendFeedback(type) {
+        // In a real implementation, you would send this to your backend
+        console.log(`Feedback: ${type}`);
+
+        const thankYouMsg = $("body").hasClass("rtl")
+          ? "شكراً لك على ملاحظاتك!"
+          : "Thank you for your feedback!";
+
+        $("#feedbackButtons").html(
+          `<div class="text-success">${thankYouMsg}</div>`
+        );
+      }
+
+      // Try to visualize numerical data in the answer
+      function tryVisualizeData(answerText) {
+        // Destroy previous chart if exists
+        if (dataChart) {
+          dataChart.destroy();
+        }
+
+        // Simple pattern matching for potential chart data
+        const matches = answerText.match(/(\d{4}):\s*([\d.]+)%/g);
+
+        if (matches && matches.length >= 3) {
+          const years = [];
+          const values = [];
+
+          matches.forEach((match) => {
+            const parts = match.split(":");
+            years.push(parts[0].trim());
+            values.push(parseFloat(parts[1].replace("%", "").trim()));
+          });
+
+          // Create chart
+          const ctx = document.getElementById("dataChart").getContext("2d");
+          dataChart = new Chart(ctx, {
+            type: "line",
+            data: {
+              labels: years,
+              datasets: [
+                {
+                  label: $("body").hasClass("rtl") ? "القيمة" : "Value",
+                  data: values,
+                  backgroundColor: "rgba(26, 35, 126, 0.2)",
+                  borderColor: "rgba(26, 35, 126, 1)",
+                  borderWidth: 2,
+                  tension: 0.1,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                title: {
+                  display: true,
+                  text: $("body").hasClass("rtl")
+                    ? "اتجاه البيانات عبر السنوات"
+                    : "Data Trend Over Years",
+                },
+                tooltip: {
+                  callbacks: {
+                    label: function (context) {
+                      return `${context.dataset.label}: ${context.raw}%`;
+                    },
+                  },
+                },
+              },
+              scales: {
+                y: {
+                  beginAtZero: false,
+                },
+              },
+            },
+          });
+
+          $("#visualizationCard").show();
+        }
+      }
+
+      // Load history on page load
+      $(document).ready(function () {
+        const history = JSON.parse(localStorage.getItem("queryHistory") || []);
+        renderHistory(history);
+      });
+    </script>
+  </body>
+</html>

@@ -1,11 +1,7 @@
-streamlit
-openai
-langchain
-langchain-community
+Flask
+python-dotenv
 pandas
 requests
-plotly
-tiktoken
-python-dotenv
+langchain
+openai
 faiss-cpu
-
