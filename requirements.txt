@@ -1,0 +1,16 @@
+Flask
+python-dotenv
+pandas
+requests
+langchain
+langchain-community
+langchain-openai
+faiss-cpu
+streamlit
+numpy
+matplotlib
+plotly
+seaborn
+scikit-learn
+python-dateutil
+pytz
