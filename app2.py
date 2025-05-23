@@ -12,7 +12,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 from gtts import gTTS
-import matplotlib.pyplot plt
+import matplotlib.pyplot as plt
 import logging
 import warnings
 
@@ -170,6 +170,9 @@ def audio():
 @app.route("/download-audio")
 def download_audio():
     return send_file("output.mp3", as_attachment=True)
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=10000, debug=True)
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=10000, debug=True)
