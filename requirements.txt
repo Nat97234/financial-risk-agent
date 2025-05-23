@@ -17,3 +17,5 @@ pytz
 yfinance
 wbgapi
 gTTS
+alpha_vantage
+gunicorn
