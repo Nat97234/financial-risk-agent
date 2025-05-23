@@ -13,13 +13,6 @@ from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 from gtts import gTTS
 import matplotlib.pyplot as plt
-import logging
-import warnings
-
-# إخفاء جميع رسائل التحذير والـ logging
-warnings.filterwarnings('ignore')
-logging.getLogger().setLevel(logging.CRITICAL)
-os.environ['PYTHONWARNINGS'] = 'ignore'
 
 app = Flask(__name__)
 
@@ -32,13 +25,9 @@ ALPHA_API_KEY = os.getenv("ALPHAVANTAGE_API_KEY")
 FMP_API_KEY = os.getenv("FMP_API_KEY")
 OER_API_KEY = os.getenv("EXCHANGERATES_API_KEY")
 
-# Load local CSV data بدون إظهار أي رسائل تحذير
+# Load local CSV data
 csv_path = 'financial_risk_analysis_large.csv'
-try:
-    financial_data = pd.read_csv(csv_path)
-except (FileNotFoundError, Exception):
-    # إنشاء DataFrame فارغ بصمت تام بدون أي رسائل
-    financial_data = pd.DataFrame()
+financial_data = pd.read_csv(csv_path)
 
 # Fetch stock data from Alpha Vantage
 def get_stock_data(symbols=["AAPL"]):
@@ -53,9 +42,8 @@ def get_stock_data(symbols=["AAPL"]):
                 df.index = pd.to_datetime(df.index)
                 df.sort_index(inplace=True)
                 all_data[symbol] = df
-        except Exception:
-            # تجاهل جميع الأخطاء بصمت
-            continue
+        except Exception as e:
+            print(f"Error fetching data for {symbol}: {e}")
     return all_data
 
 alpha_data = get_stock_data()
@@ -63,12 +51,9 @@ alpha_data = get_stock_data()
 # Convert all data into LangChain documents
 def convert_data_to_documents(combined_data):
     documents = []
-    # التأكد من وجود بيانات CSV قبل المعالجة
-    if len(combined_data["csv_data"]) > 0:
-        for row in combined_data["csv_data"][:100]:
-            content = "\n".join([f"{k}: {v}" for k, v in row.items() if v is not None])
-            documents.append(Document(page_content=content, metadata={"source": "csv"}))
-    
+    for row in combined_data["csv_data"][:100]:
+        content = "\n".join([f"{k}: {v}" for k, v in row.items() if v is not None])
+        documents.append(Document(page_content=content, metadata={"source": "csv"}))
     documents.append(Document(page_content=str(combined_data["stock_data_alpha"]), metadata={"source": "alpha_vantage"}))
     return documents
 
@@ -77,8 +62,10 @@ combined_data = {
     "stock_data_alpha": alpha_data
 }
 
+documents = convert_data_to_documents(combined_data)
+
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
-split_docs = text_splitter.split_documents(convert_data_to_documents(combined_data))
+split_docs = text_splitter.split_documents(documents)
 
 embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
 vectorstore = FAISS.from_documents(split_docs, embeddings)
@@ -174,5 +161,3 @@ def download_audio():
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=10000, debug=True)
 
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=10000, debug=True)
