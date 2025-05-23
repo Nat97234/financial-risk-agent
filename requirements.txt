@@ -16,3 +16,4 @@ python-dateutil
 pytz
 yfinance
 wbgapi
+gTTS
