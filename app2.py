@@ -1,80 +1,165 @@
-import streamlit as st
+from flask import Flask, request, jsonify, render_template_string, send_file
+import os
 import pandas as pd
 import requests
-import yfinance as yf
 from datetime import datetime
+from dotenv import load_dotenv
+from langchain.schema import Document
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.vectorstores import FAISS
+from langchain.chat_models import ChatOpenAI
+from langchain.chains import RetrievalQA
+from langchain.prompts import PromptTemplate
+from gtts import gTTS
+import matplotlib.pyplot as plt
+import logging
 
-# ---------- واجهة المستخدم ----------
-st.set_page_config(page_title="الوكيل الذكي للنصح المالي", layout="wide")
-st.title("📊 وكيل تقييم المخاطر والنصح المالي الذكي")
-st.markdown("""
-هذا النظام يستخدم الذكاء الاصطناعي لتحليل الأسهم وتقديم نصائح مالية أولية.
-أدخل رمز السهم (مثل `AAPL`, `TSLA`, `MSFT`) للحصول على معلومات تفصيلية.
-""")
+app = Flask(__name__)
 
-# ---------- إدخال المستخدم ----------
-symbol = st.text_input("أدخل رمز السهم:", value="AAPL")
+# Load environment variables
+load_dotenv()
 
-# ---------- جلب البيانات من yfinance ----------
-def fetch_stock_info(symbol):
-    try:
-        stock = yf.Ticker(symbol)
-        info = stock.info
-        hist = stock.history(period="1mo")
-        return info, hist
-    except:
-        return None, None
+# Load API keys
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+ALPHA_API_KEY = os.getenv("ALPHAVANTAGE_API_KEY")
+FMP_API_KEY = os.getenv("FMP_API_KEY")
+OER_API_KEY = os.getenv("EXCHANGERATES_API_KEY")
 
-if symbol:
-    info, hist = fetch_stock_info(symbol)
-    if info:
-        col1, col2 = st.columns(2)
+# Load local CSV data with try-except لتجنب ظهور رسالة الخطأ في الواجهة
+csv_path = 'financial_risk_analysis_large.csv'
+try:
+    financial_data = pd.read_csv(csv_path)
+except FileNotFoundError:
+    logging.warning(f"{csv_path} not found. Using alternative data sources.")
+    financial_data = pd.DataFrame()  # تعيين DataFrame فارغ كبديل
 
-        with col1:
-            st.subheader(f"معلومات عن السهم: {symbol.upper()}")
-            st.write(f"**السعر الحالي:** {info.get('currentPrice', 'N/A')} USD")
-            st.write(f"**القيمة السوقية:** {info.get('marketCap', 'N/A'):,} USD")
-            st.write(f"**بيتا:** {info.get('beta', 'N/A')}")
-            st.write(f"**الأرباح:** {info.get('dividendRate', 'N/A')} USD")
-            st.write(f"**متوسط الحجم:** {info.get('averageVolume', 'N/A'):,}")
-            st.write(f"**تغير السهم اليوم:** {info.get('regularMarketChange', 0):.2f} USD")
+# Fetch stock data from Alpha Vantage
+def get_stock_data(symbols=["AAPL"]):
+    all_data = {}
+    for symbol in symbols:
+        url = f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={symbol}&apikey={ALPHA_API_KEY}&outputsize=compact"
+        try:
+            response = requests.get(url)
+            data = response.json()
+            if 'Time Series (Daily)' in data:
+                df = pd.DataFrame.from_dict(data['Time Series (Daily)'], orient='index').astype(float)
+                df.index = pd.to_datetime(df.index)
+                df.sort_index(inplace=True)
+                all_data[symbol] = df
+        except Exception as e:
+            print(f"Error fetching data for {symbol}: {e}")
+    return all_data
 
-        with col2:
-            st.subheader("📈 الرسم البياني للسعر")
-            st.line_chart(hist['Close'])
+alpha_data = get_stock_data()
 
-        # ---------- التحليل ----------
-        st.markdown("---")
-        st.subheader("📋 تحليل ذكي للسهم:")
+# Convert all data into LangChain documents
+def convert_data_to_documents(combined_data):
+    documents = []
+    for row in combined_data["csv_data"][:100]:
+        content = "\n".join([f"{k}: {v}" for k, v in row.items() if v is not None])
+        documents.append(Document(page_content=content, metadata={"source": "csv"}))
+    documents.append(Document(page_content=str(combined_data["stock_data_alpha"]), metadata={"source": "alpha_vantage"}))
+    return documents
 
-        current_price = info.get("currentPrice")
-        beta = info.get("beta")
-        market_cap = info.get("marketCap")
-        volume = info.get("averageVolume")
-        change = info.get("regularMarketChange")
-        dividend = info.get("dividendRate")
+combined_data = {
+    "csv_data": financial_data.to_dict(orient="records"),
+    "stock_data_alpha": alpha_data
+}
 
-        analysis = f"""
-كما هو الحال مع أي استثمار، هناك دائمًا درجة من المخاطر المرتبطة بالاستثمار في الأسهم، بما في ذلك سهم {symbol.upper()}.
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+split_docs = text_splitter.split_documents(convert_data_to_documents(combined_data))
 
-- السعر الحالي للسهم هو **{current_price} دولارًا**.
-- متوسط حجم التداول هو **{volume:,}**، مما يدل على نشاط تداول جيد.
-- معدل بيتا هو **{beta}**، مما يعني أن السهم {"أكثر" if beta and beta > 1 else "أقل"} حساسية للتغيرات في السوق.
-- القيمة السوقية للشركة هي **{market_cap:,} دولارًا**، مما يجعلها {"كبيرة" if market_cap and market_cap > 1e11 else "متوسطة"} الحجم.
-- الأرباح المدفوعة هي **{dividend if dividend else "لا توجد أرباح مدفوعة"}**.
-- التغير اليومي في السهم هو **{change:.2f} دولارًا**.
+embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
+vectorstore = FAISS.from_documents(split_docs, embeddings)
 
-⚠️ هذا التحليل مبدئي ولا يُعتبر نصيحة استثمارية. يُرجى الرجوع لمصادر إضافية قبل اتخاذ قرار مالي.
+prompt_template = """
+Use the following context to answer the question. Answer only using the information provided in the context.
+If the answer is not present, say there's not enough info.
+Respond in Arabic or English as asked.
+
+Context:
+{context}
+
+Question:
+{question}
+
+Answer:
 """
-        st.markdown(analysis)
 
-        # ---------- مثال على سؤال ذكي ----------
-        st.markdown("---")
-        st.subheader("🧠 مثال على سؤال ممكن تجربته:")
-        st.markdown("""
-        🔍 ما هي أبرز عوامل المخاطر في سهم Apple وهل يعتبر استثمارًا آمنًا في الوضع الحالي؟
-        
-        يمكنك طرح سؤالك بصيغة مشابهة في النسخة المتقدمة من الوكيل الذكي باستخدام نماذج لغوية أكبر.
-        """)
-    else:
-        st.error("⚠️ لم يتم العثور على بيانات لهذا الرمز. يرجى التأكد من صحته.")
+prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
+
+llm = ChatOpenAI(model_name="gpt-4", openai_api_key=OPENAI_API_KEY)
+
+rag_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    retriever=vectorstore.as_retriever(search_kwargs={"k": 10}),
+    return_source_documents=True,
+    chain_type_kwargs={"prompt": prompt}
+)
+
+HTML_TEMPLATE = """
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>الوكيل المالي الذكي</title>
+    <style>
+        body { font-family: 'Arial'; background: #f4f4f4; padding: 20px; }
+        .container { max-width: 600px; background: white; padding: 20px; border-radius: 10px; }
+        textarea { width: 100%; height: 100px; }
+        .result { margin-top: 20px; padding: 10px; background: #e8f4ea; border-radius: 5px; }
+        button { padding: 10px 15px; margin-top: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>وكيل تقييم المخاطر والنصح المالي الذكي</h2>
+        <form method="POST">
+            <textarea name="question" placeholder="اكتب سؤالك هنا..."></textarea>
+            <button type="submit">إرسال</button>
+        </form>
+        {% if result %}
+        <div class="result">
+            <strong>الإجابة:</strong>
+            <p>{{ result }}</p>
+            <audio controls src="/audio"></audio>
+            <br>
+            <a href="/download-audio">تحميل الصوت</a>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
+"""
+
+@app.route("/", methods=["GET", "POST"])
+def index():
+    if request.method == "POST":
+        question = request.form.get("question")
+        if not question:
+            return jsonify({"error": "No question provided"}), 400
+
+        try:
+            response = rag_chain.invoke({"query": question})
+            result = response["result"]
+
+            tts = gTTS(text=result, lang='ar' if any(c in question for c in 'ابتثجحخدذرزسشصضطظعغفقكلمنهوية') else 'en')
+            tts.save("output.mp3")
+
+            return render_template_string(HTML_TEMPLATE, result=result)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    return render_template_string(HTML_TEMPLATE)
+
+@app.route("/audio")
+def audio():
+    return send_file("output.mp3", mimetype="audio/mpeg")
+
+@app.route("/download-audio")
+def download_audio():
+    return send_file("output.mp3", as_attachment=True)
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=10000, debug=True)
