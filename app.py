@@ -36,18 +36,22 @@ st.set_page_config(
     page_icon="📈"
 )
 
-# Custom CSS for enhanced UI
+# Custom CSS for professional design
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Roboto+Slab:wght@700&display=swap');
+
     /* General Styling */
     .main-container {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        background-color: #f0f0f0;
         padding: 2rem;
         border-radius: 15px;
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        font-family: 'Roboto', sans-serif;
+        color: #666666;
     }
     .main-header {
-        background: linear-gradient(90deg, #2c3e50 0%, #3498db 100%);
+        background: linear-gradient(90deg, #003366 0%, #3399cc 100%);
         padding: 2.5rem;
         border-radius: 15px;
         color: white;
@@ -57,6 +61,7 @@ st.markdown("""
         animation: fadeIn 1s ease-in-out;
     }
     .main-header h1 {
+        font-family: 'Roboto Slab', serif;
         font-size: 2.5em;
         margin: 0;
         text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
@@ -66,51 +71,40 @@ st.markdown("""
         opacity: 0.9;
     }
     .section-header {
-        color: #2c3e50;
+        font-family: 'Roboto Slab', serif;
+        color: #003366;
         font-size: 1.8em;
         margin: 1.5rem 0 1rem;
-        border-bottom: 2px solid #3498db;
+        border-bottom: 2px solid #3399cc;
         padding-bottom: 0.5rem;
     }
-    .question-box {
-        background: linear-gradient(135deg, #3498db 0%, #2c3e50 100%);
+    .question-box, .answer-box {
+        background-color: white;
         padding: 1.5rem;
         border-radius: 12px;
-        color: white;
         margin: 1rem 0;
         box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
         transition: transform 0.3s ease;
+        border-left: 4px solid #003366;
     }
-    .question-box:hover {
-        transform: translateY(-5px);
-    }
-    .answer-box {
-        background: linear-gradient(135deg, #e91e63 0%, #f06292 100%);
-        padding: 1.5rem;
-        border-radius: 12px;
-        color: white;
-        margin: 1rem 0;
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-        transition: transform 0.3s ease;
-    }
-    .answer-box:hover {
+    .question-box:hover, .answer-box:hover {
         transform: translateY(-5px);
     }
     .agent-thinking {
-        background: linear-gradient(135deg, #00c4b4 0%, #4dd0e1 100%);
+        background-color: #ecf0f1;
         padding: 1rem;
         border-radius: 10px;
-        color: white;
+        color: #666666;
         margin: 0.5rem 0;
         font-style: italic;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
     .metric-card {
-        background: white;
+        background-color: white;
         padding: 1rem;
         border-radius: 10px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        border-left: 4px solid #3498db;
+        border-left: 4px solid #003366;
         transition: transform 0.3s ease;
     }
     .metric-card:hover {
@@ -118,7 +112,7 @@ st.markdown("""
     }
     /* Data Sources Styling */
     .data-source-card {
-        background: white;
+        background-color: white;
         padding: 1rem;
         border-radius: 10px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -145,42 +139,39 @@ st.markdown("""
         align-items: center;
     }
     .data-source-info strong {
-        color: #2c3e50;
+        color: #003366;
         font-size: 1.1em;
     }
     .data-source-info small {
-        color: #666;
+        color: #666666;
         margin-left: 0.5rem;
         font-size: 0.9em;
     }
     /* Gold Prices Styling */
     .gold-prices {
-        background: linear-gradient(135deg, #ffd700 0%, #d4af37 100%);
+        background-color: #ffd700;
         padding: 2rem;
         border-radius: 15px;
-        color: #333;
+        color: white;
         margin: 1rem 0;
         box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
         text-align: center;
-        animation: glow 2s ease-in-out infinite alternate;
     }
     .gold-prices h3 {
-        color: #ffd700;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        color: white;
         font-size: 2em;
     }
     .gold-prices p {
         font-size: 1.2em;
         margin: 0.5rem 0;
-        color: #ffffff;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
     }
     /* Sidebar Styling */
     .sidebar .sidebar-content {
-        background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+        background-color: #003366;
         color: white;
         border-radius: 10px;
         padding: 1rem;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
     .sidebar-section {
         background: rgba(255, 255, 255, 0.1);
@@ -189,17 +180,13 @@ st.markdown("""
         margin-bottom: 1rem;
     }
     .sidebar-section h3 {
-        color: #3498db;
+        color: #3399cc;
         margin-top: 0;
     }
     /* Animations */
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(-20px); }
         to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes glow {
-        from { box-shadow: 0 0 5px #ffd700, 0 0 10px #ffd700; }
-        to { box-shadow: 0 0 10px #ffd700, 0 0 20px #ffd700; }
     }
     /* Tabs Styling */
     .stTabs [data-baseweb="tab-list"] {
@@ -209,23 +196,23 @@ st.markdown("""
         background-color: #ecf0f1;
         border-radius: 8px;
         padding: 0.5rem 1rem;
-        color: #2c3e50;
+        color: #003366;
         font-weight: bold;
         transition: background-color 0.3s ease;
     }
     .stTabs [data-baseweb="tab"][aria-selected="true"] {
-        background-color: #3498db;
+        background-color: #003366;
         color: white;
     }
     /* Form Styling */
     .stForm {
-        background: white;
+        background-color: white;
         padding: 1.5rem;
         border-radius: 12px;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
     .stButton>button {
-        background: linear-gradient(90deg, #3498db 0%, #2c3e50 100%);
+        background-color: #003366;
         color: white;
         border: none;
         border-radius: 8px;
@@ -237,13 +224,13 @@ st.markdown("""
     }
     /* Expander Styling */
     .stExpander {
-        background: #ecf0f1;
+        background-color: #ecf0f1;
         border-radius: 8px;
         margin: 0.5rem 0;
     }
     /* Footer Styling */
     .footer {
-        background: linear-gradient(90deg, #2c3e50 0%, #3498db 100%);
+        background-color: #003366;
         padding: 2rem;
         border-radius: 15px;
         color: white;
